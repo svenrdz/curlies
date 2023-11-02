@@ -29,3 +29,9 @@ proc construct*(T: NimNode, params: NimNode): tuple[obj, final: NimNode, dotdotI
     result.final[0] = T
   of Distinct:
     result.final = newCall(T, result.final)
+  of Tuple:
+    let tup = nnkTupleConstr.newTree()
+    for param in result.obj[1..^1]:
+      tup.add param
+    result.obj = tup
+    result.final = tup

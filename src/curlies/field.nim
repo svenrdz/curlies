@@ -19,7 +19,17 @@ proc `$`*(field: Field): string =
     "Field[" & $field.name & ": " & $field.value.repr & "]"
 
 proc symFields*(sym: NimNode{sym}): Fields =
-  for expr in sym.getImpl[2][1..^1]:
+  let
+    impl = sym.getImpl[2]
+    exprlist = case impl.kind:
+      of nnkObjConstr:
+        impl[1..^1]
+      of nnkTupleConstr:
+        impl[0..^1]
+      else:
+        error("bad kind " & $impl.kind)
+        impl[0..0]
+  for expr in exprlist:
     result.add Field(name: expr[0].nimName, value: expr[1])
 
 proc `[]`*(fields: Fields, name: NimName): NimNode =

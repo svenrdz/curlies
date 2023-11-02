@@ -3,19 +3,30 @@ import ast_pattern_matching
 
 type
   DefKind* = enum
-    Object Ref Distinct
+    Object Ref Distinct Tuple
   DefObj* = object
-    sym*: NimNode
     obj*: NimNode
     quality*: seq[DefKind]
 
+proc sym*(def: DefObj): NimNode =
+  case def.obj.kind
+  of nnkSym:
+    def.obj
+  of nnkTypeDef:
+    def.obj[0]
+  else:
+    newNilLit()
+
 proc `$`*(def: DefObj): string =
+  let sym = case def.sym.kind:
+    of nnkNilLit: "<Nil>"
+    else: $def.sym
   result = dedent"""
   DefObj(
     sym: $1
     quality: $2
   $3)
-  """ % [$def.sym, $def.quality, indent(def.obj.repr, 2)]
+  """ % [sym, $def.quality, indent(def.obj.repr, 2)]
 
 proc `$`*(q: seq[DefKind]): string =
   q.join(" ").toLower
@@ -23,19 +34,20 @@ proc `$`*(q: seq[DefKind]): string =
 proc getDefImpl(def: var DefObj) =
   matchAst def.obj, errors:
   of `s` @ nnkSym:
-    def.sym = s
-    def.obj = s.getImpl[2]
+    def.obj = s.getImpl
     getDefImpl def
-  of `o` @ nnkObjectTy:
-    def.quality.add Object
-  of `r` @ nnkRefTy:
-    def.obj = r[0]
+  of `r` @ nnkTypeDef(_, _, nnkRefTy):
+    def.obj = r[2][0]
     def.quality.add Ref
     getDefImpl def
-  of `d` @ nnkDistinctTy:
-    def.obj = d[0]
+  of `d` @ nnkTypeDef(_, _, nnkDistinctTy):
+    def.obj = d[2][0]
     def.quality.add Distinct
     getDefImpl def
+  of `o` @ nnkTypeDef(_, _, nnkObjectTy):
+    def.quality.add Object
+  of `t` @ nnkTypeDef(_, _, nnkTupleTy):
+    def.quality.add Tuple
   else:
     error($errors)
 

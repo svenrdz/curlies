@@ -3,25 +3,28 @@ import std/[algorithm, genasts, macros, strutils]
 import micros/[nimnames, nimnodes]
 import micros/definitions/[identdefs, objectdefs]
 
-import curlies/[field, utils, errors]
+import curlies/[def, field, utils, errors]
 
-proc check(fields: seq[Field],
-           rec: NimNode,
-           originId: string,
-           missing: var seq[NimName],
-           exportedOnly: bool) =
+proc identDefsIsMissing(fields: seq[Field],
+                    name: NimName,
+                    defaultValue: NimNode,
+                    exportedOnly: bool): bool =
+  if not fields.has(name, defaultValue):
+    if (exportedOnly and name.isPostfixStar) or not exportedOnly:
+      result = true
+
+proc checkObjectRec(fields: seq[Field], rec: NimNode, originId: string,
+           missing: var seq[NimName], exportedOnly: bool) =
   case rec.kind
   of nnkIdentDefs:
     let idef = IdentDef rec
     for name in idef.names:
-      if not fields.has(name, idef.val):
-        if (exportedOnly and name.isPostfixStar) or not exportedOnly:
-          missing.add name.stripPostfix
+      if fields.identDefsIsMissing(name, idef.val, exportedOnly):
+        missing.add name.stripPostfix
   of nnkRecCase:
     let discriminator = IdentDef rec[0]
-    if not fields.has(discriminator):
-      if (exportedOnly and discriminator.name.isPostfixStar) or not exportedOnly:
-        missing.add discriminator.name.stripPostfix
+    if fields.identDefsIsMissing(discriminator.name, discriminator.val, exportedOnly):
+      missing.add discriminator.name.stripPostfix
     else:
       for field in fields:
         if field.isZeroDefault:
@@ -73,19 +76,37 @@ proc removeMissingZeroDefault(obj: var NimNode,
 
 macro checkAndRewrite*(obj, final, dotdot: typed,
                        dotdotId, originId: static string): untyped =
-  result = copyNimTree final
   let
     objSym = obj[1]
     fields = objSym.symFields
-    def = objSym.objectDef
     origin = getNode(originId)
     exportedOnly = objSym.module != origin.module
+    originDef = origin.getDef
   var missing: seq[NimName]
-  for rec in def.recList:
-    fields.check(rec, originId, missing, exportedOnly)
-  for parent in def.inheritObjs:
-    for rec in parent.recList:
-      fields.check(rec, originId, missing, exportedOnly)
+  case originDef.quality[^1]:
+    of Object:
+      result = copyNimTree final
+      let def = originDef.obj.ObjectDef
+      for rec in def.recList:
+        fields.checkObjectRec(rec, originId, missing, exportedOnly)
+      for parent in def.inheritObjs:
+        for rec in parent.recList:
+          fields.checkObjectRec(rec, originId, missing, exportedOnly)
+    of Tuple:
+      result = nnkTupleConstr.newTree()
+      for rec in originDef.obj[^1]:
+        let
+          idef = IdentDef rec
+          name = idef.name
+        if fields.identDefsIsMissing(name, newEmptyNode(), exportedOnly):
+          if idef.val.kind != nnkEmpty:
+            result.add nnkExprColonExpr.newTree(name.NimNode, idef.val)
+          else:
+            missing.add name.stripPostfix
+        else:
+          result.add nnkExprColonExpr.newTree(name.NimNode, fields[name])
+      result = nnkCommand.newTree(origin, result)
+    else: error("impossible")
   if dotdotId.len > 0:
     result.removeMissingZeroDefault(fields, missing)
     for name in missing:
