@@ -33,12 +33,12 @@ block:
 block:
   ## update missing fields with any object
   type
-    SomePerson = object
+    Person = object
       name: string
       age: int
       favouriteNumber: int = 3
   let
-    sam = SomePerson(name: "Sam", age: 30)
+    sam = Person(name: "Sam", age: 30)
     samUser = User{
       email: "sam@curli.es",
       ..sam,

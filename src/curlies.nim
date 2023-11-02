@@ -1,10 +1,10 @@
 import std/[genasts, macros]
-import curlies/[curliable, construct, check, errors]
+import curlies/[construct, check, errors]
 
-macro `{}`*(T: typedesc[Curliable], params: varargs[untyped]): untyped =
+macro `{}`*(T: typedesc, params: varargs[untyped]): untyped =
   runnableExamples:
     type
-      SomePerson = object
+      Person = object
         name: string
         age, height: int
         favouriteNumber: int = 3
@@ -12,9 +12,9 @@ macro `{}`*(T: typedesc[Curliable], params: varargs[untyped]): untyped =
     let
       name = "Sam"
       age = 30
-      sam = SomePerson{ name, age, height: 160 }
+      sam = Person{ name, age, height: 160 }
       height = 155
-      max = SomePerson{
+      max = Person{
         name: "Max",
         height,
         ..sam
@@ -26,14 +26,16 @@ macro `{}`*(T: typedesc[Curliable], params: varargs[untyped]): untyped =
 
   let
     originId = registerNode(T)
-    (obj, dotdotId) = construct(T, params)
+    (obj, final, dotdotId) = construct(T, params)
     dotdot = getNode(dotdotId)
 
-  ## The expr stores `obj` in `tmp` so it is a symbol defined in the scope
-  ## calling `T{}`.
-  ## This enables using `.module()` on `tmp` and decide whether to require all
-  ## fields or only exported ones.
+  ## The `tmp` variable represents a regular variable defined using an object
+  ## construct expression, using a type pruned of all ref/distinct modifiers.
+  ## The `final` node holds the actual expression with the correct type.
+  ## This enables using the `module` proc and the `fields` iterator on `tmp`
+  ## as it is a symbol.
   ## After checking the object's completeness, the expression is rewritten
-  ## to a single nnkObjConstr, removing the temporary variable.
-  result = genAst(obj, dotdot, dotdotId, originId):
-    checkAndRewrite((var tmp = obj; tmp), dotdot, dotdotId, originId)
+  ## to the single `final` expression, with additional fields from `..`, and
+  ## effectively removing any temporary variable.
+  result = genAst(obj, final, dotdot, dotdotId, originId):
+    checkAndRewrite((var tmp = obj; tmp), final, dotdot, dotdotId, originId)

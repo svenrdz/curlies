@@ -1,3 +1,5 @@
+## WARNING: This is a toy project, use at your own risk
+
 # Curlies
 
 A macro for object construction using `{}` (curlies).
@@ -21,19 +23,20 @@ Alternatively, curlies can be installed with [atlas]:
 
     $ atlas use curlies
 
+
 ## Syntax
 
 Curlies are defined as a typed macro:
 
 ```nim
-macro `{}`*(T: typedesc[Curliable], params: varargs[untyped]): untyped
+macro `{}`*(T: typedesc, params: varargs[untyped]): untyped
 ```
 
 It's very similar to rust's struct initialization syntax, the main difference
 being you cannot use a whitespace between the type and opening bracket `{`.
 
 Borrowed features include:
-* [field init shorthand]:
+* [field init shorthand]
 ```nim
 type
   MyType = object
@@ -45,7 +48,7 @@ let
 assert full == short
 ```
 
-* [update syntax]:
+* [update syntax]
 ```nim
 type
   MyType = object
@@ -56,12 +59,14 @@ let
 assert derived == MyType(a: 4, b: 2, c: 3)
 ```
 
+
 ## Supported
 
 Most nim types should work out of the box, [tests] currently cover:
 
 * [objects](/tests/tbasic.nim)
 * [ref objects](/tests/tref.nim)
+* [distinct objects](/tests/tdistinct.nim)
 * [variant objects](/tests/tcase.nim)
 * [inheritance objects](/tests/tinherit.nim)
 
@@ -69,19 +74,20 @@ For types imported from another module, only exported fields are enforced,
 unless of course they bring a default value. Otherwise, all non-default fields
 are enforced.
 
+
 ## Usage
 
 ### Equivalent to regular object construction:
 
 ```nim
 type
-  SomePerson = object
+  Person = object
     name: string
     age, height: int
     favouriteNumber: int = 3
 
 const
-  sam = SomePerson{
+  sam = Person{
     name: "Sam",
     age: 30,
     height: 175
@@ -96,7 +102,7 @@ echo sam
 
 ```nim
 type
-  SomePerson = object
+  Person = object
     name: string
     age, height: int
     favouriteNumber: int = 3
@@ -104,7 +110,7 @@ type
 let
   name = "Max"
   height = 155
-  max = SomePerson{
+  max = Person{
     name,
     height,
     ..sam,
@@ -117,12 +123,12 @@ echo max
 
 ```nim
 type
-  SomePerson = object
+  Person = object
     name: string
     age, height: int
     favouriteNumber: int = 3
 
-echo SomePerson{ name: "Incomplete" }
+echo Person{ name: "Incomplete" }
 # Error: @[age, height]: initialization required.
 ```
 

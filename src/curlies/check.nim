@@ -1,11 +1,11 @@
-import std/[algorithm, macros, strutils]
-import micros/nimnodes
+import std/[algorithm, genasts, macros, strutils]
+
+import micros/[nimnames, nimnodes]
 import micros/definitions/[identdefs, objectdefs]
 
-import curlies/[curliable, field, utils, errors]
+import curlies/[field, utils, errors]
 
 proc check(fields: seq[Field],
-           def: ObjectDef,
            rec: NimNode,
            originId: string,
            missing: var seq[NimName],
@@ -15,17 +15,27 @@ proc check(fields: seq[Field],
     let idef = IdentDef rec
     for name in idef.names:
       if not fields.has(name, idef.val):
-        if (exportedOnly and name.isExported) or not exportedOnly:
+        if (exportedOnly and name.isPostfixStar) or not exportedOnly:
           missing.add name.stripPostfix
   of nnkRecCase:
     let discriminator = IdentDef rec[0]
     if not fields.has(discriminator):
-      if (exportedOnly and discriminator.name.isExported) or not exportedOnly:
+      if (exportedOnly and discriminator.name.isPostfixStar) or not exportedOnly:
         missing.add discriminator.name.stripPostfix
     else:
       for field in fields:
         if field.isZeroDefault:
-          if (exportedOnly and field.name.isExported) or not exportedOnly:
+          if exportedOnly:
+            for branch in rec[1..^1]:
+              let branchRecList = branch[^1]
+              for n in branchRecList:
+                let
+                  rawName = n[0]
+                  name = rawName.stripPostfix
+                  fieldName = field.name.NimNode.stripPostfix
+                if name.eqIdent(fieldname) and rawName.isPostfixStar:
+                  missing.add nimName(name)
+          else:
             missing.add field.name.stripPostfix
   of nnkRecWhen:
     error("Curlies does not handle types that use `when`.", getNode(originId))
@@ -37,14 +47,17 @@ proc addMissing(name: NimName, source: NimNode, sourceId: string): NimNode =
     conds = fieldConditions(source, name)
     namenode = name.NimNode
     errorMsg = "missing field: $1" % $namenode
-    info = getNode(sourceId).lineInfo
-    whenSource = quote do:
-      when not compiles(`source`.`namenode`):
-        errorNode(`errorMsg`, `sourceId`)
-      if `conds`:
-        `source`.`namenode`
+    infoObj = getNode(sourceId).lineInfoObj
+    info = (infoObj.filename, infoObj.line)
+    whenSource = genAst(source, namenode, errorMsg, sourceId, info, conds):
+      when not compiles(source.namenode):
+        errorNode(errorMsg, sourceId)
+      if conds:
+        source.namenode
       else:
-        raise FieldDefect.newException(`info` & "\n" & `errorMsg`)
+        {.line: info.}:
+          raise FieldDefect.newException(errorMsg)
+        source.namenode
     colonExpr = nnkExprColonExpr.newTree(namenode, whenSource)
   result = colonExpr
 
@@ -58,9 +71,9 @@ proc removeMissingZeroDefault(obj: var NimNode,
   for idx in zerosIdx.reversed:
     obj.del idx
 
-macro checkAndRewrite*(obj: Curliable{nkStmtListExpr}, dotdot: typed,
+macro checkAndRewrite*(obj, final, dotdot: typed,
                        dotdotId, originId: static string): untyped =
-  result = obj[0][0][^1]
+  result = copyNimTree final
   let
     objSym = obj[1]
     fields = objSym.symFields
@@ -69,10 +82,10 @@ macro checkAndRewrite*(obj: Curliable{nkStmtListExpr}, dotdot: typed,
     exportedOnly = objSym.module != origin.module
   var missing: seq[NimName]
   for rec in def.recList:
-    fields.check(def, rec, originId, missing, exportedOnly)
+    fields.check(rec, originId, missing, exportedOnly)
   for parent in def.inheritObjs:
     for rec in parent.recList:
-      fields.check(parent, rec, originId, missing, exportedOnly)
+      fields.check(rec, originId, missing, exportedOnly)
   if dotdotId.len > 0:
     result.removeMissingZeroDefault(fields, missing)
     for name in missing:

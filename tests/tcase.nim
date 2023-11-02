@@ -71,8 +71,8 @@ block:
   ## Update syntax with branch switching.
   ## When some branch-specific fields are not known at compile-time, a
   ## runtime check happens at runtime, to know whether the fields can be
-  ## accessed safely. If not, a FieldDefect is raised, with its message poiting
-  ## the exact file/line/col where this happens.
+  ## accessed safely.
+  ## Otherwise, a FieldDefect is raised.
   let
     freeUser = Account{
       kind: Free,

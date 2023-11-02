@@ -4,7 +4,7 @@ import std/unittest
 import curlies
 
 type
-  SomePerson = object
+  Person = object
     name: string
     age: int
     favouriteNumber: int = 3
@@ -13,15 +13,19 @@ const
   name = "Sam"
   age = 30
 
-block `Should work with ref objects too`:
+block:
+  ## Should work with ref objects too
   type
-    RefPerson = ref SomePerson
+    RefPerson = ref Person
   let
     sam = RefPerson{ name, age }
-  check sam[] == SomePerson(name: "Sam", age: 30, favouriteNumber: 3)
+  check sam[] == Person(name: "Sam", age: 30, favouriteNumber: 3)
   check not compiles(RefPerson{ })
 
-block `multi ref is not (yet?) supported`:
+block:
+  ## multi ref is not (yet?) supported
   type
-    RefRefPerson = ref ref SomePerson
+    RefPerson = ref Person
+    RefRefPerson = ref RefPerson
+  check compiles(RefPerson{ name, age })
   check not compiles(RefRefPerson{ name, age })

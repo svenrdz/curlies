@@ -9,11 +9,17 @@ proc module*(n: NimNode): NimNode =
   while result.symKind != nskModule:
     result = result.owner
 
-proc isExported*(name: NimName): bool =
-  name.NimNode.kind == nnkPostfix and name.NimNode[0] == ident"*"
+func isPostfixStar*(name: NimNode): bool =
+  name.kind == nnkPostfix and name[0] == ident"*"
 
-proc stripPostfix*(name: NimName): NimName =
-  if name.isExported:
-    name.NimNode[1].nimName
+func isPostfixStar*(name: NimName): bool =
+  name.NimNode.isPostfixStar
+
+func stripPostfix*(name: NimNode): NimNode =
+  if name.isPostfixStar:
+    name[1]
   else:
     name
+
+func stripPostfix*(name: NimName): NimName =
+  name.NimNode.stripPostfix.nimName

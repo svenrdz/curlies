@@ -1,5 +1,5 @@
 type
-  SomePerson* = object
+  Person* = object
     name*: string
     age: int
     favouriteNumber*: int = 3

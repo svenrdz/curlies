@@ -12,3 +12,5 @@ srcDir        = "src"
 requires "nim >= 2.0.0"
 
 requires "micros >= 0.1.13"
+requires "https://github.com/nim-lang/ast-pattern-matching"
+

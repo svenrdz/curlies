@@ -4,10 +4,10 @@ import std/unittest
 import curlies
 
 type
-  SomePerson = object of RootObj
+  Person = object of RootObj
     name: string
     age: int
-  User = object of SomePerson
+  User = object of Person
     email: string
 
 const
@@ -15,7 +15,7 @@ const
   age = 30
   email = "sam@curli.es"
 let
-  sam = SomePerson(name: name, age: age)
+  sam = Person(name: name, age: age)
   samUser = User(name: name, age: age, email: email)
 
 block:
@@ -31,7 +31,7 @@ block:
 
 block:
   let
-    max = SomePerson{ name: "Max", age: 40 }
+    max = Person{ name: "Max", age: 40 }
     maxUser = User{
       email: "max@curli.es",
       ..max

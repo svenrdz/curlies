@@ -11,14 +11,14 @@ const
   favouriteNumber = 12
 
 block:
-  check not compiles(SomePerson{ })
-  check not compiles(SomePerson{ age })
-  check compiles(SomePerson{ name })
+  check not compiles(Person{ })
+  check not compiles(Person{ age })
+  check compiles(Person{ name })
 
 block:
-  let sam = SomePerson{ name }
-  check sam == SomePerson(name: name, favouriteNumber: 3)
+  let sam = Person{ name }
+  check sam == Person(name: name, favouriteNumber: 3)
 
 block:
-  let sam = SomePerson{ name, favouriteNumber }
-  check sam == SomePerson(name: name, favouriteNumber: 12)
+  let sam = Person{ name, favouriteNumber }
+  check sam == Person(name: name, favouriteNumber: 12)
