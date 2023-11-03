@@ -23,6 +23,15 @@ block:
   check not compiles(RefPerson{ })
 
 block:
+  ## update syntax
+  type
+    RefPerson = ref Person
+  let
+    sam = RefPerson{ name, age }
+    max = RefPerson{ name: "Max", ..sam }
+  check max[] == Person(name: "Max", age: 30, favouriteNumber: 3)
+
+block:
   ## multi ref is not (yet?) supported
   type
     RefPerson = ref Person

@@ -69,7 +69,8 @@ Most nim types should work out of the box, [tests] currently cover:
 * [distinct objects](/tests/tdistinct.nim)
 * [variant objects](/tests/tcase.nim)
 * [inheritance objects](/tests/tinherit.nim)
-* even [tuples](/tests/ttuple.nim)!
+* [tuples](/tests/ttuple.nim)
+* even [fungus ADTs](/tests/tfungus.nim)!
 
 For types imported from another module, only exported fields are enforced,
 unless of course they bring a default value. Otherwise, all non-default fields

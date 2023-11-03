@@ -30,6 +30,7 @@ block:
   assert compiles(User{ name, age, email })
 
 block:
+  ## update syntax
   let
     max = Person{ name: "Max", age: 40 }
     maxUser = User{

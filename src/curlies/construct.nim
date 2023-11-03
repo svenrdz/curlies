@@ -1,10 +1,12 @@
 import std/[macros, strutils]
-import curlies/[def, errors]
+import curlies/[def, errors, fungus_utils]
 
 proc construct*(T: NimNode, params: NimNode): tuple[obj, final: NimNode, dotdotId: string] =
-  let def = getDef T
+  var def = getDef T
   if def.quality.len > 2:
     error("Unsupported type: $1 is $2" % [$T, $def.quality])
+  elif def.isAdtChild():
+    def.quality = @[Tuple]
   result.obj = nnkObjConstr.newTree(def.sym)
   result.dotdotId = ""
   for param in params:

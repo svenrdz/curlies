@@ -32,4 +32,14 @@ block:
     sam = Person{age, name}
   check sam is Person
   check sam == (name, age, 3)
-  check not compiles(Person{})
+
+block:
+  ## updating works as expected
+  let
+    sam = (age: age, name: name)
+    max = Person{ name: "Max", ..sam }
+    max2 = Person{ ..max }
+  check max is Person
+  check max == ("Max", age, 3)
+  check max2 is Person
+  check max2 == max
