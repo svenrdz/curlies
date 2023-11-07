@@ -7,15 +7,15 @@ import ast_pattern_matching
 import curlies/[def, field, fungus_utils, utils, errors]
 
 proc identDefsIsMissing(fields: seq[Field],
-                    name: NimName,
-                    defaultValue: NimNode,
-                    exportedOnly: bool): bool =
+                        name: NimName,
+                        defaultValue: NimNode,
+                        exportedOnly: bool): bool =
   if not fields.has(name, defaultValue):
     if (exportedOnly and name.isPostfixStar) or not exportedOnly:
       result = true
 
 proc checkObjectRec(fields: seq[Field], rec: NimNode, originId: string,
-           missing: var seq[NimName], exportedOnly: bool) =
+                    missing: var seq[NimName], exportedOnly: bool) =
   case rec.kind
   of nnkIdentDefs:
     let idef = IdentDef rec
@@ -177,7 +177,7 @@ proc checkAndRewriteFungus(output: var NimNode,
       if branch[1].kind == nnkNilLit:
         break
       let
-        valueName = branch[1][0]
+        valueName = branch[1][0].stripPostfix
         tupleTy = branch[1][1][0]
       var constr = nnkTupleConstr.newTree()
       result = constr.checkAndRewriteTuple(fields, def, tupleTy,
