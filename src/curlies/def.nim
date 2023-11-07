@@ -3,7 +3,7 @@ import ast_pattern_matching
 
 type
   DefKind* = enum
-    Object Ref Distinct Tuple
+    Object Ref Distinct Tuple Generic
   DefObj* = object
     obj*: NimNode
     quality*: seq[DefKind]
@@ -35,6 +35,10 @@ proc getDefImpl(def: var DefObj) =
   matchAst def.obj, errors:
   of `s` @ nnkSym:
     def.obj = s.getImpl
+    getDefImpl def
+  of `g` @ nnkBracketExpr(_, _):
+    def.obj = g[0]
+    def.quality.add Generic
     getDefImpl def
   of `r` @ nnkTypeDef(_, _, nnkRefTy):
     def.obj = r[2][0]

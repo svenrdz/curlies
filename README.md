@@ -66,6 +66,7 @@ Most nim types should work out of the box, [tests] currently cover:
 
 * [objects](/tests/tbasic.nim)
 * [ref objects](/tests/tref.nim)
+* [generic objects](/tests/tgeneric.nim)
 * [distinct objects](/tests/tdistinct.nim)
 * [variant objects](/tests/tcase.nim)
 * [inheritance objects](/tests/tinherit.nim)

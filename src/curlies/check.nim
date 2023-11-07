@@ -97,13 +97,13 @@ proc addMissingTuple(name: NimName, source: NimNode): NimNode =
 
 proc addMissing(name: NimName, source: NimNode, sourceId: string): NimNode =
   case source.typeKind
-  of ntyObject, ntyRef: # else ?
+  of ntyObject, ntyRef, ntyGenericInst: # else ?
     return addMissingObject(name, source, sourceId)
   of ntyDistinct:
     return addMissingDistinct(name, source, sourceId)
   of ntyTuple:
     return addMissingTuple(name, source)
-  else: discard
+  else: error("Unsupported typekind: " & $source.typeKind)
 
 proc removeMissingZeroDefault(obj: var NimNode,
                               fields: seq[Field],

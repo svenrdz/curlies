@@ -27,7 +27,7 @@ proc construct*(T: NimNode, params: NimNode): tuple[obj, final: NimNode, dotdotI
   case def.quality[0]
   of Object:
     discard
-  of Ref:
+  of Ref, Generic:
     result.final[0] = T
   of Distinct:
     result.final = newCall(T, result.final)
