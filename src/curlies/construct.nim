@@ -1,7 +1,9 @@
 import std/[macros, strutils]
 import curlies/[def, errors, fungus_utils]
 
-proc construct*(T: NimNode, params: NimNode): tuple[obj, final: NimNode, dotdotId: string] =
+proc construct*(
+    T: NimNode, params: NimNode
+): tuple[obj, final: NimNode, dotdotId: string] =
   var def = getDef T
   if def.quality.len > 2:
     error("Unsupported type: $1 is $2" % [$T, $def.quality])
@@ -15,10 +17,6 @@ proc construct*(T: NimNode, params: NimNode): tuple[obj, final: NimNode, dotdotI
       result.obj.add nnkExprColonExpr.newTree(param, param)
     of nnkExprColonExpr:
       result.obj.add param
-    # of nnkExprEqExpr:  # support `{x = ...}` syntax ?
-    #   let colonExpr = nnkExprColonExpr.newTree()
-    #   param.copyChildrenTo(colonExpr)
-    #   result.add colonExpr
     elif param.kind == nnkPrefix and param[0] == ident"..":
       result.dotdotId = registerNode(param[1])
     else:

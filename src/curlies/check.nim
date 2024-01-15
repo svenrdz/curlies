@@ -6,16 +6,20 @@ import ast_pattern_matching
 
 import curlies/[def, field, fungus_utils, utils, errors]
 
-proc identDefsIsMissing(fields: seq[Field],
-                        name: NimName,
-                        defaultValue: NimNode,
-                        exportedOnly: bool): bool =
+proc identDefsIsMissing(
+    fields: seq[Field], name: NimName, defaultValue: NimNode, exportedOnly: bool
+): bool =
   if not fields.has(name, defaultValue):
     if (exportedOnly and name.isPostfixStar) or not exportedOnly:
       result = true
 
-proc checkObjectRec(fields: seq[Field], rec: NimNode, originId: string,
-                    missing: var seq[NimName], exportedOnly: bool) =
+proc checkObjectRec(
+    fields: seq[Field],
+    rec: NimNode,
+    originId: string,
+    missing: var seq[NimName],
+    exportedOnly: bool,
+) =
   case rec.kind
   of nnkIdentDefs:
     let idef = IdentDef rec
@@ -56,15 +60,16 @@ proc addMissingObject(name: NimName, source: NimNode, sourceId: string): NimNode
     errorMsg = name.errorMsg
     infoObj = getNode(sourceId).lineInfoObj
     info = (infoObj.filename, infoObj.line)
-    whenSource = genAst(source, namenode, errorMsg, sourceId, info, conds):
-      when not compiles(source.namenode):
-        errorNode(errorMsg, sourceId)
-      if conds:
-        source.namenode
-      else:
-        {.line: info.}:
-          raise FieldDefect.newException(errorMsg)
-        source.namenode
+    whenSource =
+      genAst(source, namenode, errorMsg, sourceId, info, conds):
+        when not compiles(source.namenode):
+          errorNode(errorMsg, sourceId)
+        if conds:
+          source.namenode
+        else:
+          {.line: info.}:
+            raise FieldDefect.newException(errorMsg)
+          source.namenode
     colonExpr = nnkExprColonExpr.newTree(namenode, whenSource)
   colonExpr
 
@@ -72,11 +77,12 @@ proc addMissingDistinct(name: NimName, source: NimNode, sourceId: string): NimNo
   let
     namenode = name.NimNode
     errorMsg = name.errorMsg
-    whenSource = genAst(source, namenode, errorMsg, sourceId):
-      when not compiles(source.namenode):
-        errorNode(errorMsg, sourceId)
-      else:
-        source.namenode
+    whenSource =
+      genAst(source, namenode, errorMsg, sourceId):
+        when not compiles(source.namenode):
+          errorNode(errorMsg, sourceId)
+        else:
+          source.namenode
     colonExpr = nnkExprColonExpr.newTree(namenode, whenSource)
   colonExpr
 
@@ -89,8 +95,9 @@ proc addMissingTuple(name: NimName, source: NimNode): NimNode =
       if idef[0].eqIdent(name.NimNode):
         let
           namenode = name.NimNode
-          value = genAst(source, namenode):
-            source.namenode
+          value =
+            genAst(source, namenode):
+              source.namenode
           colonExpr = nnkExprColonExpr.newTree(namenode, value)
         return colonExpr
     error("missing field $1" % [$name.NimNode], source)
@@ -103,11 +110,12 @@ proc addMissing(name: NimName, source: NimNode, sourceId: string): NimNode =
     return addMissingDistinct(name, source, sourceId)
   of ntyTuple:
     return addMissingTuple(name, source)
-  else: error("Unsupported typekind: " & $source.typeKind)
+  else:
+    error("Unsupported typekind: " & $source.typeKind)
 
-proc removeMissingZeroDefault(obj: var NimNode,
-                              fields: seq[Field],
-                              missing: seq[NimName]) =
+proc removeMissingZeroDefault(
+    obj: var NimNode, fields: seq[Field], missing: seq[NimName]
+) =
   var zerosIdx: seq[int]
   for i, field in fields:
     if field.isZeroDefault and field.name in missing:
@@ -115,12 +123,14 @@ proc removeMissingZeroDefault(obj: var NimNode,
   for idx in zerosIdx.reversed:
     obj.del idx
 
-proc checkAndRewriteObject(output: var NimNode,
-                           fields: seq[Field],
-                           def: DefObj,
-                           originId, dotdotId: string,
-                           dotdot: NimNode,
-                           exportedOnly: bool): seq[NimName] =
+proc checkAndRewriteObject(
+    output: var NimNode,
+    fields: seq[Field],
+    def: DefObj,
+    originId, dotdotId: string,
+    dotdot: NimNode,
+    exportedOnly: bool,
+): seq[NimName] =
   let
     isDistinct = def.quality[0] == Distinct
     def = def.obj.ObjectDef
@@ -140,15 +150,16 @@ proc checkAndRewriteObject(output: var NimNode,
   if isDistinct:
     output = newCall(outputType, output)
 
-proc checkAndRewriteTuple(output: var NimNode,
-                          fields: seq[Field],
-                          def: DefObj,
-                          tupleTy: NimNode,
-                          dotdotId: string,
-                          dotdot: NimNode): seq[NimName] =
+proc checkAndRewriteTuple(
+    output: var NimNode,
+    fields: seq[Field],
+    def: DefObj,
+    tupleTy: NimNode,
+    dotdotId: string,
+    dotdot: NimNode,
+): seq[NimName] =
   for rec in tupleTy:
-    let
-      idef = IdentDef rec
+    let idef = IdentDef rec
     for name in idef.names:
       if fields.identDefsIsMissing(name, newEmptyNode(), exportedOnly = false):
         if idef.val.kind != nnkEmpty:
@@ -166,12 +177,14 @@ proc checkAndRewriteTuple(output: var NimNode,
       else:
         output.add nnkExprColonExpr.newTree(name.NimNode, fields[name])
 
-proc checkAndRewriteFungus(output: var NimNode,
-                           fields: seq[Field],
-                           def: DefObj,
-                           kind: NimNode,
-                           dotdotId: string,
-                           dotdot: NimNode): seq[NimName] =
+proc checkAndRewriteFungus(
+    output: var NimNode,
+    fields: seq[Field],
+    def: DefObj,
+    kind: NimNode,
+    dotdotId: string,
+    dotdot: NimNode,
+): seq[NimName] =
   for branch in def.obj.objectDef.recList[0][1..^1]:
     if branch[0].eqIdent(kind):
       if branch[1].kind == nnkNilLit:
@@ -180,13 +193,13 @@ proc checkAndRewriteFungus(output: var NimNode,
         valueName = branch[1][0].stripPostfix
         tupleTy = branch[1][1][0]
       var constr = nnkTupleConstr.newTree()
-      result = constr.checkAndRewriteTuple(fields, def, tupleTy,
-                                           dotdotId, dotdot)
+      result = constr.checkAndRewriteTuple(fields, def, tupleTy, dotdotId, dotdot)
       output.add nnkExprColonExpr.newTree(valueName, constr)
       break
 
-macro checkAndRewrite*(obj, final, dotdot: typed,
-                       dotdotId, originId: static string): untyped =
+macro checkAndRewrite*(
+    obj, final, dotdot: typed, dotdotId, originId: static string
+): untyped =
   let
     objSym = obj[1]
     fields = objSym.symFields
@@ -197,24 +210,27 @@ macro checkAndRewrite*(obj, final, dotdot: typed,
   if originDef.isAdtChild():
     let
       kind = ident($origin & "Kind")
+      # TODO: adtEnums cas use a custom `kind` ident
       colonKind = nnkExprColonExpr.newTree(ident"kind", kind)
     result = nnkObjConstr.newTree(originDef.sym, colonKind)
-    missing = result.checkAndRewriteFungus(fields, originDef, kind,
-                                           dotdotId, dotdot)
+    missing = result.checkAndRewriteFungus(fields, originDef, kind, dotdotId, dotdot)
     result = nnkCommand.newTree(origin, result)
   else:
-    case originDef.quality[^1]:
-      of Object:
-        result = copyNimTree final
-        missing = result.checkAndRewriteObject(fields, originDef, originId,
-                                               dotdotId, dotdot, exportedOnly)
-      of Tuple:
-        result = nnkTupleConstr.newTree()
-        let tupleTy = originDef.obj[^1]
-        missing = result.checkAndRewriteTuple(fields, originDef, tupleTy,
-                                              dotdotId, dotdot)
-        result = nnkCommand.newTree(origin, result)
-      else: error("impossible")
+    case originDef.quality[^1]
+    of Object:
+      result = copyNimTree final
+      missing =
+        result.checkAndRewriteObject(
+          fields, originDef, originId, dotdotId, dotdot, exportedOnly
+        )
+    of Tuple:
+      result = nnkTupleConstr.newTree()
+      let tupleTy = originDef.obj[^1]
+      missing =
+        result.checkAndRewriteTuple(fields, originDef, tupleTy, dotdotId, dotdot)
+      result = nnkCommand.newTree(origin, result)
+    else:
+      error("impossible")
   if missing.len > 1:
     error($missing & ": initialization required.", origin)
   elif missing.len > 0:

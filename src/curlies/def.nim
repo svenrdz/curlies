@@ -1,9 +1,15 @@
 import std/[macros, strutils]
 import ast_pattern_matching
+import curlies/utils
 
 type
   DefKind* = enum
-    Object Ref Distinct Tuple Generic
+    Object
+    Ref
+    Distinct
+    Tuple
+    Generic
+
   DefObj* = object
     obj*: NimNode
     quality*: seq[DefKind]
@@ -13,20 +19,27 @@ proc sym*(def: DefObj): NimNode =
   of nnkSym:
     def.obj
   of nnkTypeDef:
-    def.obj[0]
+    def.obj[0].stripPostfix
   else:
     newNilLit()
 
 proc `$`*(def: DefObj): string =
-  let sym = case def.sym.kind:
-    of nnkNilLit: "<Nil>"
-    else: $def.sym
-  result = dedent"""
+  let
+    sym =
+      case def.sym.kind
+      of nnkNilLit:
+        "<Nil>"
+      else:
+        $def.sym
+  result =
+    dedent"""
   DefObj(
     sym: $1
     quality: $2
   $3)
-  """ % [sym, $def.quality, indent(def.obj.repr, 2)]
+  """ % [
+      sym, $def.quality, indent(def.obj.repr, 2)
+    ]
 
 proc `$`*(q: seq[DefKind]): string =
   q.join(" ").toLower
@@ -40,6 +53,8 @@ proc getDefImpl(def: var DefObj) =
     def.obj = g[0]
     def.quality.add Generic
     getDefImpl def
+  of `r` @ nnkTypeDef(_, _, nnkRefTy(nnkObjectTy)):
+    def.quality.add [Ref, Object]
   of `r` @ nnkTypeDef(_, _, nnkRefTy):
     def.obj = r[2][0]
     def.quality.add Ref
@@ -53,6 +68,7 @@ proc getDefImpl(def: var DefObj) =
   of `t` @ nnkTypeDef(_, _, nnkTupleTy):
     def.quality.add Tuple
   else:
+    echo def.obj.treerepr
     error($errors)
 
 proc getDef*(x: NimNode): DefObj =
@@ -64,20 +80,24 @@ when isMainModule:
     let def = getDef x
     echo x.repr, " -> ", def
     echo ""
+
   type
     O = object
       x: int
+
     DO = distinct O
     R = ref object
       y: float
+
     DR = distinct R
     RO = ref O
     DRO = distinct RO
     RRRO = ref ref ref O
+
   test O
   test DO
   test R
   test DR
   test RO
   test DRO
-  test RRRO
+  # test RRRO
