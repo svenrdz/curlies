@@ -3,10 +3,14 @@ type
     name*: string
     age: int
     favouriteNumber*: int = 3
+
   User* = object
     name*, email*: string
+
   AccountKind* = enum
-    Free, Paid
+    Free
+    Paid
+
   Account* = object
     name*, email*: string
     case kind*: AccountKind

@@ -1,35 +1,34 @@
-
-import std/unittest
-
 import curlies
+import ./check
 
 type
   Person = object
     name: string
     age: int
     favouriteNumber: int = 3
+
   DistinctPerson = distinct Person
 
 const
-  name = "Sam"
+  name = "Alice"
   age = 30
 
 block:
   ## distinct object
-  let sam = DistinctPerson{ name, age }
-  check sam is DistinctPerson
-  check Person(sam) == Person(name: "Sam", age: 30, favouriteNumber: 3)
+  let alice = DistinctPerson{name, age}
+  check alice is DistinctPerson
+  check Person(alice) == Person(name: "Alice", age: 30, favouriteNumber: 3)
   check not compiles(DistinctPerson{})
 
 block:
   ## update syntax
   let
-    distinctSam = DistinctPerson{ name, age }
-    sam = Person distinctSam
-    max = DistinctPerson{ name: "Max", ..sam }
-  check max is DistinctPerson
-  check Person(max) == Person(name: "Max", age: 30, favouriteNumber: 3)
-  check not compiles(DistinctPerson{ name: "Max", ..distinctSam })
+    distinctAlice = DistinctPerson{name, age}
+    alice = Person distinctAlice
+    bob = DistinctPerson{name: "Bob", ..alice}
+  check bob is DistinctPerson
+  check Person(bob) == Person(name: "Bob", age: 30, favouriteNumber: 3)
+  check not compiles(DistinctPerson{name: "Bob", ..distinctAlice})
 
 # block:
 #   ## combining ref with distinct (still no multi ref)

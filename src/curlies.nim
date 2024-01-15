@@ -10,19 +10,16 @@ macro `{}`*(T: typedesc, params: varargs[untyped]): untyped =
         favouriteNumber: int = 3
 
     let
-      name = "Sam"
+      name = "Alice"
       age = 30
-      sam = Person{ name, age, height: 160 }
+      alice = Person{name, age, height: 160}
       height = 155
-      max = Person{
-        name: "Max",
-        height,
-        ..sam
-      }
-    echo sam
-    # (name: "Sam", age: 30, height: 160, favouriteNumber: 3)
-    echo max
-    # (name: "Max", age: 30, height: 155, favouriteNumber: 3)
+      bob = Person{name: "Bob", height, ..alice}
+
+    echo alice
+    # (name: "Alice", age: 30, height: 160, favouriteNumber: 3)
+    echo bob
+    # (name: "Bob", age: 30, height: 155, favouriteNumber: 3)
 
   let
     originId = registerNode(T)
@@ -37,5 +34,6 @@ macro `{}`*(T: typedesc, params: varargs[untyped]): untyped =
   ## After checking the object's completeness, the expression is rewritten
   ## to the single `final` expression, with additional fields from `..`, and
   ## effectively removing any temporary variable.
-  result = genAst(obj, final, dotdot, dotdotId, originId):
-    checkAndRewrite((var tmp = obj; tmp), final, dotdot, dotdotId, originId)
+  result =
+    genAst(obj, final, dotdot, dotdotId, originId):
+      checkAndRewrite((var tmp = obj; tmp), final, dotdot, dotdotId, originId)

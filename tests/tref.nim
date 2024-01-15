@@ -1,7 +1,5 @@
-
-import std/unittest
-
 import curlies
+import ./check
 
 type
   Person = object
@@ -10,31 +8,42 @@ type
     favouriteNumber: int = 3
 
 const
-  name = "Sam"
+  name = "Alice"
   age = 30
 
 block:
-  ## Should work with ref objects too
+  ## regular ref object
   type
-    RefPerson = ref Person
-  let
-    sam = RefPerson{ name, age }
-  check sam[] == Person(name: "Sam", age: 30, favouriteNumber: 3)
-  check not compiles(RefPerson{ })
+    RefPerson = ref object
+      name: string
+      age: int
+
+  let alice = RefPerson{name, age}
+  check alice.name == "Alice"
+  check alice.age == 30
+
+block:
+  ## lifted ref objects
+  type RefPerson = ref Person
+
+  let alice = RefPerson{name, age}
+  check alice[] == Person(name: "Alice", age: 30, favouriteNumber: 3)
+  check not compiles(RefPerson{})
 
 block:
   ## update syntax
-  type
-    RefPerson = ref Person
+  type RefPerson = ref Person
+
   let
-    sam = RefPerson{ name, age }
-    max = RefPerson{ name: "Max", ..sam }
-  check max[] == Person(name: "Max", age: 30, favouriteNumber: 3)
+    alice = RefPerson{name, age}
+    bob = RefPerson{name: "Bob", ..alice}
+  check bob[] == Person(name: "Bob", age: 30, favouriteNumber: 3)
 
 block:
   ## multi ref is not (yet?) supported
   type
     RefPerson = ref Person
     RefRefPerson = ref RefPerson
-  check compiles(RefPerson{ name, age })
-  check not compiles(RefRefPerson{ name, age })
+
+  check compiles(RefPerson{name, age})
+  check not compiles(RefRefPerson{name, age})

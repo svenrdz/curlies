@@ -1,7 +1,5 @@
-
-import std/unittest
-
 import curlies
+import ./check
 
 type
   Person[T: SomeInteger] = object
@@ -10,16 +8,16 @@ type
     favouriteNumber: int = 3
 
 const
-  name = "Sam"
+  name = "Alice"
   age = 30'u8
-  sam = Person[uint8](name: name, age: age, favouriteNumber: 3)
+  alice = Person[uint8](name: name, age: age, favouriteNumber: 3)
 
-# block:
-#   ## generic object
-#   check Person[uint8]{ name, age } == sam
-#   check not compiles(Person{name, age})
+block:
+  ## generic object
+  check Person[uint8]{name, age} == alice
+  check not compiles(Person{name, age})
 
 block:
   ## update syntax
-  let max = Person[uint8]{ name: "Max", ..sam }
-  check max == Person[uint8](name: "Max", age: 30, favouriteNumber: 3)
+  let bob = Person[uint8]{name: "Bob", ..alice}
+  check bob == Person[uint8](name: "Bob", age: 30, favouriteNumber: 3)
