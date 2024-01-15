@@ -1,17 +1,23 @@
-## WARNING: This is a toy project, use at your own risk
-
 # Curlies
 
 A macro for object construction using `{}` (curlies).
 
+With curlies, initialization of <i>required</i> fields is checked at compile-time.
+For object fields with a default value (available since nim 2.0),
+initialization is obviously not mandatory.
+
+It's simply a macro equivalent for the common `proc init[T](_: type T, ...)`
+that uses the type's declaration to dispatch and check all required fields
+are provided.
+The output of a curlies construction is an [object construction] expression,
+no temporary variables are introduced.
+
+
 ## But why?
 
-Curlies enforces initialization of all <i>required</i> fields, those that don't
-have a default value.
+I wanted to get a better grasp of nim's macro system and see how far it could
+be pushed to enable static checks on missing fields for object initialization.
 
-It's basically a compile-time equivalent for `proc init[T](...)` that uses the
-type's definition to verify all fields are supplied, and produces an [object
-construction] expression.
 
 ## Installation
 
@@ -26,13 +32,13 @@ Alternatively, curlies can be installed with [atlas]:
 
 ## Syntax
 
-Curlies are defined as a typed macro:
+Curlies is defined as a typed macro:
 
 ```nim
 macro `{}`*(T: typedesc, params: varargs[untyped]): untyped
 ```
 
-It's very similar to rust's struct initialization syntax, the main difference
+It's somehow similar to rust's struct initialization syntax, the main difference
 being you cannot use a whitespace between the type and opening bracket `{`.
 
 Borrowed features include:
@@ -73,9 +79,10 @@ Most nim types should work out of the box, [tests] currently cover:
 * [tuples](/tests/ttuple.nim)
 * even [fungus ADTs](/tests/tfungus.nim)!
 
-For types imported from another module, only exported fields are enforced,
-unless of course they bring a default value. Otherwise, all non-default fields
-are enforced.
+Curlies behaviour differs based on the module where it is used.
+* for types declared in the *same module*, **all non-default** fields are enforced.
+* for types declared in *another module*, only **exported fields** are enforced,
+unless of course they bring a default value.
 
 
 ## Usage
@@ -90,14 +97,14 @@ type
     favouriteNumber: int = 3
 
 const
-  sam = Person{
-    name: "Sam",
+  alice = Person{
+    name: "Alice",
     age: 30,
     height: 175
   }
 
-echo sam
-# (name: "Sam", age: 30, height: 175, favouriteNumber: 3)
+echo alice
+# (name: "Alice", age: 30, height: 175, favouriteNumber: 3)
 ```
 
 
@@ -111,15 +118,15 @@ type
     favouriteNumber: int = 3
 
 let
-  name = "Max"
+  name = "Bob"
   height = 155
-  max = Person{
+  bob = Person{
     name,
     height,
-    ..sam,
+    ..alice,
   }
-echo max
-# (name: "Max", age: 30, height: 155, favouriteNumber: 3)
+echo bob
+# (name: "Bob", age: 30, height: 155, favouriteNumber: 3)
 ```
 
 ### Compilation error on missing fields
